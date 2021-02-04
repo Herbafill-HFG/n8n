@@ -8,17 +8,9 @@ const config = convict({
 	database: {
 		type: {
 			doc: 'Type of database to use',
-			format: ['sqlite', 'mariadb', 'mongodb', 'mysqldb', 'postgresdb'],
+			format: ['sqlite', 'mariadb', 'mysqldb', 'postgresdb'],
 			default: 'sqlite',
 			env: 'DB_TYPE',
-		},
-		mongodb: {
-			connectionUrl: {
-				doc: 'MongoDB Connection URL',
-				format: '*',
-				default: 'mongodb://user:password@localhost:27017/database',
-				env: 'DB_MONGODB_CONNECTION_URL',
-			},
 		},
 		tablePrefix: {
 			doc: 'Prefix for table names',
@@ -122,6 +114,14 @@ const config = convict({
 				format: String,
 				default: 'root',
 				env: 'DB_MYSQLDB_USER',
+			},
+		},
+		sqlite: {
+			executeVacuumOnStartup: {
+				doc: 'Runs VACUUM operation on startup to rebuild the database. Reduces filesize and optimizes indexes. WARNING: This is a long running blocking operation. Will increase start-up time.',
+				format: Boolean,
+				default: false,
+				env: 'DB_SQLITE_VACUUM_ON_STARTUP',
 			},
 		},
 	},
@@ -413,6 +413,30 @@ const config = convict({
 	},
 
 	nodes: {
+		include: {
+			doc: 'Nodes to load',
+			format: function check(rawValue) {
+				if (rawValue === '') {
+					return;
+				}
+				try {
+					const values = JSON.parse(rawValue);
+					if (!Array.isArray(values)) {
+						throw new Error();
+					}
+
+					for (const value of values) {
+						if (typeof value !== 'string') {
+							throw new Error();
+						}
+					}
+				} catch (error) {
+					throw new TypeError(`The Nodes to include is not a valid Array of strings.`);
+				}
+			},
+			default: undefined,
+			env: 'NODES_INCLUDE',
+		},
 		exclude: {
 			doc: 'Nodes not to load',
 			format: function check(rawValue) {
